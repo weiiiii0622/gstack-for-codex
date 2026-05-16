@@ -317,8 +317,8 @@ _BRAIN_SYNC_MODE=$("$_BRAIN_CONFIG_BIN" get artifacts_sync_mode 2>/dev/null || e
 
 # Detect remote-MCP mode (Path 4 of /setup-gbrain). Local artifacts sync is
 # a no-op in remote mode; the brain server pulls from GitHub/GitLab on its
-# own cadence. Read claude.json directly to keep this preamble fast (no
-# subprocess to claude CLI on every skill start).
+# own cadence. Read host MCP config directly when available to keep this
+# preamble fast (no subprocess to host CLI on every skill start).
 _GBRAIN_MCP_MODE="none"
 if command -v jq >/dev/null 2>&1 && [ -f "$HOME/.claude.json" ]; then
   _GBRAIN_MCP_TYPE=$(jq -r '.mcpServers.gbrain.type // .mcpServers.gbrain.transport // empty' "$HOME/.claude.json" 2>/dev/null)

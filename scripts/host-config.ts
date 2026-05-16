@@ -33,6 +33,16 @@ export interface HostConfig {
   hostSubdir: string;
   /** Whether preamble generates $GSTACK_ROOT env vars (true for non-Claude hosts). */
   usesEnvVars: boolean;
+  /** Project instruction file this host reads/writes (e.g., CLAUDE.md, AGENTS.md). */
+  projectInstructionsFile?: string;
+  /** Repo-local vendored gstack path used by warnings/migration prose. */
+  vendoredSkillRoot?: string;
+  /** Host-native plan directory fallback under $HOME. */
+  planRoot?: string;
+  /** JSON MCP config path under $HOME, when host supports Claude-style mcpServers JSON. */
+  mcpConfigJsonFile?: string;
+  /** Default model overlay for generated skills when --model is not supplied. */
+  defaultModel?: string;
 
   // --- Frontmatter Transformation ---
   frontmatter: {

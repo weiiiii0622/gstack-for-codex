@@ -65,13 +65,16 @@ describe('gstack-paths', () => {
     expect(got.GSTACK_STATE_ROOT).toBe('.gstack');
   });
 
-  test('PLAN_ROOT chain: GSTACK_PLAN_DIR > CLAUDE_PLANS_DIR > HOME > CWD', () => {
+  test('PLAN_ROOT chain: GSTACK_PLAN_DIR > host plan env > host HOME default > CWD', () => {
     expect(run({ GSTACK_PLAN_DIR: '/tmp/explicit', HOME: '/h' }).PLAN_ROOT).toBe('/tmp/explicit');
+    expect(run({ CODEX_PLANS_DIR: '/tmp/codex', HOME: '/h' }).PLAN_ROOT).toBe('/tmp/codex');
     expect(run({ CLAUDE_PLANS_DIR: '/tmp/claude', HOME: '/h' }).PLAN_ROOT).toBe('/tmp/claude');
     expect(run({ HOME: '/tmp/myhome' }).PLAN_ROOT).toBe('/tmp/myhome/.claude/plans');
+    expect(run({ GSTACK_HOST: 'codex', HOME: '/tmp/myhome' }).PLAN_ROOT).toBe('/tmp/myhome/.codex/plans');
+    expect(run({ GSTACK_HOST: 'codex', CODEX_HOME: '/tmp/codex-home', HOME: '/tmp/myhome' }).PLAN_ROOT).toBe('/tmp/codex-home/plans');
     // CWD fallback only verifiable on POSIX — Git Bash auto-populates HOME.
     if (process.platform !== 'win32') {
-      expect(run({ HOME: '' }).PLAN_ROOT).toBe('.claude/plans');
+      expect(run({ HOME: '' }).PLAN_ROOT).toBe('.gstack/plans');
     }
   });
 

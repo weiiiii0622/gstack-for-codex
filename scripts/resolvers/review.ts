@@ -729,7 +729,8 @@ SOURCE = "codex" if Codex ran, "claude" if subagent ran.
 
 // ─── Plan File Discovery (shared helper) ──────────────────────────────
 
-function generatePlanFileDiscovery(): string {
+function generatePlanFileDiscovery(ctx?: TemplateContext): string {
+  const hostPlanRoot = ctx?.host === 'codex' ? '"$HOME/.codex/plans"' : '"$HOME/.claude/plans" "$HOME/.codex/plans"';
   return `### Plan File Discovery
 
 1. **Conversation context (primary):** Check if there is an active plan file in this conversation. The host agent's system messages include plan file paths when in plan mode. If found, use it directly — this is the most reliable signal.
@@ -744,7 +745,7 @@ REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
 _PLAN_SLUG=$(git remote get-url origin 2>/dev/null | sed 's|.*[:/]\\([^/]*/[^/]*\\)\\.git$|\\1|;s|.*[:/]\\([^/]*/[^/]*\\)$|\\1|' | tr '/' '-' | tr -cd 'a-zA-Z0-9._-') || true
 _PLAN_SLUG="\${_PLAN_SLUG:-$(basename "$PWD" | tr -cd 'a-zA-Z0-9._-')}"
 # Search common plan file locations (project designs first, then personal/local)
-for PLAN_DIR in "$HOME/.gstack/projects/$_PLAN_SLUG" "$HOME/.claude/plans" "$HOME/.codex/plans" ".gstack/plans"; do
+for PLAN_DIR in "$HOME/.gstack/projects/$_PLAN_SLUG" ${hostPlanRoot} ".gstack/plans"; do
   [ -d "$PLAN_DIR" ] || continue
   PLAN=$(ls -t "$PLAN_DIR"/*.md 2>/dev/null | xargs grep -l "$BRANCH" 2>/dev/null | head -1)
   [ -z "$PLAN" ] && PLAN=$(ls -t "$PLAN_DIR"/*.md 2>/dev/null | xargs grep -l "$REPO" 2>/dev/null | head -1)
@@ -765,11 +766,11 @@ done
 
 type PlanCompletionMode = 'ship' | 'review';
 
-function generatePlanCompletionAuditInner(mode: PlanCompletionMode): string {
+function generatePlanCompletionAuditInner(mode: PlanCompletionMode, ctx?: TemplateContext): string {
   const sections: string[] = [];
 
   // ── Plan file discovery (shared) ──
-  sections.push(generatePlanFileDiscovery());
+  sections.push(generatePlanFileDiscovery(ctx));
 
   // ── Item extraction ──
   sections.push(`
@@ -1002,12 +1003,12 @@ Plan items: N DONE, M PARTIAL, K NOT DONE
   return sections.join('\n');
 }
 
-export function generatePlanCompletionAuditShip(_ctx: TemplateContext): string {
-  return generatePlanCompletionAuditInner('ship');
+export function generatePlanCompletionAuditShip(ctx: TemplateContext): string {
+  return generatePlanCompletionAuditInner('ship', ctx);
 }
 
-export function generatePlanCompletionAuditReview(_ctx: TemplateContext): string {
-  return generatePlanCompletionAuditInner('review');
+export function generatePlanCompletionAuditReview(ctx: TemplateContext): string {
+  return generatePlanCompletionAuditInner('review', ctx);
 }
 
 // ─── Plan Verification Execution ──────────────────────────────────────

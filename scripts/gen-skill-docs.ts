@@ -50,7 +50,14 @@ let HOST: Host = HOST_ARG_VAL === 'all' ? 'claude' : HOST_ARG_VAL;
 import { ALL_MODEL_NAMES, resolveModel, type Model } from './models';
 const MODEL_ARG = process.argv.find(a => a.startsWith('--model'));
 const MODEL_ARG_VAL: Model = (() => {
-  if (!MODEL_ARG) return 'claude';
+  if (!MODEL_ARG) {
+    const defaultModel = HOST_ARG_VAL === 'all' ? 'claude' : (getHostConfig(HOST_ARG_VAL).defaultModel || 'claude');
+    const resolvedDefault = resolveModel(defaultModel);
+    if (!resolvedDefault) {
+      throw new Error(`Invalid default model for host ${HOST_ARG_VAL}: ${defaultModel}. Use ${ALL_MODEL_NAMES.join(', ')}.`);
+    }
+    return resolvedDefault;
+  }
   const val = MODEL_ARG.includes('=') ? MODEL_ARG.split('=')[1] : process.argv[process.argv.indexOf(MODEL_ARG) + 1];
   const resolved = resolveModel(val);
   if (!resolved) {
@@ -350,8 +357,10 @@ function processExternalHost(
 
   const name = externalSkillName(skillDir === '.' ? '' : skillDir, frontmatterName);
   const outputDir = path.join(ROOT, hostConfig.hostSubdir, 'skills', name);
-  fs.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'SKILL.md');
+  if (!DRY_RUN) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
 
   // Guard against symlink loops
   let symlinkLoop = false;
@@ -391,10 +400,11 @@ function processExternalHost(
   }
 
   // Config-driven: generate metadata (e.g., openai.yaml for Codex)
-  if (hostConfig.generation.generateMetadata && !symlinkLoop) {
+  if (hostConfig.generation.generateMetadata && !symlinkLoop && !DRY_RUN) {
     const agentsDir = path.join(outputDir, 'agents');
     fs.mkdirSync(agentsDir, { recursive: true });
-    const shortDescription = condenseOpenAIShortDescription(extractedDescription);
+    const metadataDescription = extractNameAndDescription(result).description || extractedDescription;
+    const shortDescription = condenseOpenAIShortDescription(metadataDescription);
     fs.writeFileSync(path.join(agentsDir, 'openai.yaml'), generateOpenAIYaml(name, shortDescription));
   }
 
@@ -430,7 +440,10 @@ function processTemplate(tmplPath: string, host: Host = 'claude'): { outputPath:
   const interactiveMatch = tmplContent.match(/^interactive:\s*(true|false)\s*$/m);
   const interactive = interactiveMatch ? interactiveMatch[1] === 'true' : undefined;
 
-  const ctx: TemplateContext = { skillName, tmplPath, benefitsFrom, host, paths: HOST_PATHS[host], preambleTier, model: MODEL_ARG_VAL, interactive };
+  const modelForHost = MODEL_ARG
+    ? MODEL_ARG_VAL
+    : (resolveModel(getHostConfig(host).defaultModel || 'claude') || 'claude');
+  const ctx: TemplateContext = { skillName, tmplPath, benefitsFrom, host, paths: HOST_PATHS[host], preambleTier, model: modelForHost, interactive };
 
   // Replace placeholders (supports parameterized: {{NAME:arg1:arg2}})
   // Config-driven: suppressedResolvers return empty string for this host

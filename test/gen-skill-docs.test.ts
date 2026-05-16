@@ -1860,6 +1860,12 @@ describe('Codex generation (--host codex)', () => {
     expect(content).not.toContain('.claude/skills');
   });
 
+  test('Codex generated skills use AGENTS.md for project instructions', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gstack-review', 'SKILL.md'), 'utf-8');
+    expect(content).toContain('AGENTS.md');
+    expect(content).not.toContain('CLAUDE.md');
+  });
+
   test('path rewrite rules apply to all Codex skills with sidecar references', () => {
     // Verify across ALL generated skills, not just review
     for (const skill of CODEX_SKILLS) {

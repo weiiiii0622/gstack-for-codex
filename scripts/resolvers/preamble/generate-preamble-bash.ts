@@ -3,8 +3,11 @@ import { getHostConfig } from '../../../hosts/index';
 
 export function generatePreambleBash(ctx: TemplateContext): string {
   const hostConfig = getHostConfig(ctx.host);
+  const instructionsFile = hostConfig.projectInstructionsFile || 'CLAUDE.md';
+  const vendoredSkillRoot = hostConfig.vendoredSkillRoot || hostConfig.localSkillRoot;
   const runtimeRoot = hostConfig.usesEnvVars
-    ? `_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+    ? `export GSTACK_HOST="${ctx.host}"
+_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 GSTACK_ROOT="$HOME/${hostConfig.globalRoot}"
 [ -n "$_ROOT" ] && [ -d "$_ROOT/${ctx.paths.localSkillRoot}" ] && GSTACK_ROOT="$_ROOT/${ctx.paths.localSkillRoot}"
 GSTACK_BIN="$GSTACK_ROOT/bin"
@@ -72,15 +75,15 @@ else
 fi
 ${ctx.paths.binDir}/gstack-timeline-log '{"skill":"${ctx.skillName}","event":"started","branch":"'"$_BRANCH"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null &
 _HAS_ROUTING="no"
-if [ -f CLAUDE.md ] && grep -q "## Skill routing" CLAUDE.md 2>/dev/null; then
+if [ -f ${instructionsFile} ] && grep -q "## Skill routing" ${instructionsFile} 2>/dev/null; then
   _HAS_ROUTING="yes"
 fi
 _ROUTING_DECLINED=$(${ctx.paths.binDir}/gstack-config get routing_declined 2>/dev/null || echo "false")
 echo "HAS_ROUTING: $_HAS_ROUTING"
 echo "ROUTING_DECLINED: $_ROUTING_DECLINED"
 _VENDORED="no"
-if [ -d ".claude/skills/gstack" ] && [ ! -L ".claude/skills/gstack" ]; then
-  if [ -f ".claude/skills/gstack/VERSION" ] || [ -d ".claude/skills/gstack/.git" ]; then
+if [ -d "${vendoredSkillRoot}" ] && [ ! -L "${vendoredSkillRoot}" ]; then
+  if [ -f "${vendoredSkillRoot}/VERSION" ] || [ -d "${vendoredSkillRoot}/.git" ]; then
     _VENDORED="yes"
   fi
 fi

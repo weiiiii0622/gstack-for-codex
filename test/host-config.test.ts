@@ -257,6 +257,13 @@ describe('HOST_PATHS derivation from configs', () => {
     expect(HOST_PATHS.codex.designDir).toBe('$GSTACK_DESIGN');
   });
 
+  test('Codex uses AGENTS.md and Codex defaults', () => {
+    expect(codex.projectInstructionsFile).toBe('AGENTS.md');
+    expect(codex.vendoredSkillRoot).toBe('.agents/skills/gstack');
+    expect(codex.planRoot).toBe('$HOME/.codex/plans');
+    expect(codex.defaultModel).toBe('gpt');
+  });
+
   test('every host with usesEnvVars=true gets env var paths', () => {
     for (const config of ALL_HOST_CONFIGS) {
       if (config.usesEnvVars) {

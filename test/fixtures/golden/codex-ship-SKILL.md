@@ -13,6 +13,7 @@ description: |
 ## Preamble (run first)
 
 ```bash
+export GSTACK_HOST="codex"
 _ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 GSTACK_ROOT="$HOME/.codex/skills/gstack"
 [ -n "$_ROOT" ] && [ -d "$_ROOT/.agents/skills/gstack" ] && GSTACK_ROOT="$_ROOT/.agents/skills/gstack"
@@ -75,7 +76,7 @@ else
 fi
 $GSTACK_BIN/gstack-timeline-log '{"skill":"ship","event":"started","branch":"'"$_BRANCH"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null &
 _HAS_ROUTING="no"
-if [ -f CLAUDE.md ] && grep -q "## Skill routing" CLAUDE.md 2>/dev/null; then
+if [ -f AGENTS.md ] && grep -q "## Skill routing" AGENTS.md 2>/dev/null; then
   _HAS_ROUTING="yes"
 fi
 _ROUTING_DECLINED=$($GSTACK_BIN/gstack-config get routing_declined 2>/dev/null || echo "false")
@@ -88,7 +89,7 @@ if [ -d ".agents/skills/gstack" ] && [ ! -L ".agents/skills/gstack" ]; then
   fi
 fi
 echo "VENDORED_GSTACK: $_VENDORED"
-echo "MODEL_OVERLAY: claude"
+echo "MODEL_OVERLAY: gpt"
 _CHECKPOINT_MODE=$($GSTACK_BIN/gstack-config get checkpoint_mode 2>/dev/null || echo "explicit")
 _CHECKPOINT_PUSH=$($GSTACK_BIN/gstack-config get checkpoint_push 2>/dev/null || echo "false")
 echo "CHECKPOINT_MODE: $_CHECKPOINT_MODE"
@@ -193,17 +194,17 @@ touch ~/.gstack/.proactive-prompted
 Skip if `PROACTIVE_PROMPTED` is `yes`.
 
 If `HAS_ROUTING` is `no` AND `ROUTING_DECLINED` is `false` AND `PROACTIVE_PROMPTED` is `yes`:
-Check if a CLAUDE.md file exists in the project root. If it does not exist, create it.
+Check if a AGENTS.md file exists in the project root. If it does not exist, create it.
 
 Use AskUserQuestion:
 
-> gstack works best when your project's CLAUDE.md includes skill routing rules.
+> gstack works best when your project's AGENTS.md includes skill routing rules.
 
 Options:
-- A) Add routing rules to CLAUDE.md (recommended)
+- A) Add routing rules to AGENTS.md (recommended)
 - B) No thanks, I'll invoke skills manually
 
-If A: Append this section to the end of CLAUDE.md:
+If A: Append this section to the end of AGENTS.md:
 
 ```markdown
 
@@ -226,7 +227,7 @@ Key routing rules:
 - Resume context → invoke /context-restore
 ```
 
-Then commit the change: `git add CLAUDE.md && git commit -m "chore: add gstack skill routing rules to CLAUDE.md"`
+Then commit the change: `git add AGENTS.md && git commit -m "chore: add gstack skill routing rules to AGENTS.md"`
 
 If B: run `$GSTACK_BIN/gstack-config set routing_declined true` and say they can re-enable with `gstack-config set routing_declined false`.
 
@@ -245,8 +246,8 @@ If A:
 1. Run `git rm -r .agents/skills/gstack/`
 2. Run `echo '.agents/skills/gstack/' >> .gitignore`
 3. Run `$GSTACK_BIN/gstack-team-init required` (or `optional`)
-4. Run `git add .claude/ .gitignore CLAUDE.md && git commit -m "chore: migrate gstack from vendored to team mode"`
-5. Tell the user: "Done. Each developer now runs: `cd $GSTACK_ROOT && ./setup --team`"
+4. Run `git add .agents/ .gitignore AGENTS.md && git commit -m "chore: migrate gstack from vendored to team mode"`
+5. Tell the user: "Done. Each developer now runs: `cd ~/.codex/skills/gstack && ./setup --team`"
 
 If B: say "OK, you're on your own to keep the vendored copy up to date."
 
@@ -269,9 +270,9 @@ AI orchestrator (e.g., OpenClaw). In spawned sessions:
 
 ### Tool resolution (read first)
 
-"AskUserQuestion" can resolve to two tools at runtime: the **host MCP variant** (e.g. `mcp__conductor__AskUserQuestion` — appears in your tool list when the host registers it) or the **native** Claude Code tool.
+"AskUserQuestion" can resolve to two tools at runtime: the **host MCP variant** (e.g. `mcp__conductor__AskUserQuestion` — appears in your tool list when the host registers it) or the host-native user-question tool when available.
 
-**Rule:** if any `mcp__*__AskUserQuestion` variant is in your tool list, prefer it. Hosts may disable native AUQ via `--disallowedTools AskUserQuestion` (Conductor does, by default) and route through their MCP variant; calling native there silently fails. Same questions/options shape; same decision-brief format applies.
+**Rule:** if any `mcp__*__AskUserQuestion` variant is in your tool list, prefer it. Some hosts expose user questions through a named UI/tool wrapper instead of `AskUserQuestion`; use the available equivalent when the shape matches. Same questions/options shape; same decision-brief format applies.
 
 **If no AskUserQuestion variant appears in your tool list, this skill is BLOCKED.** Stop, report `BLOCKED — AskUserQuestion unavailable`, and wait for the user. Do not write decisions to the plan file as a substitute, do not emit them as prose and stop, and do not silently auto-decide (only `/plan-tune` AUTO_DECIDE opt-ins authorize auto-picking).
 
@@ -314,7 +315,7 @@ Net line closes the tradeoff. Per-skill instructions may add stricter rules.
     string field (question, option label, option description) contains
     Chinese (繁體/簡體), Japanese, Korean, or other non-ASCII text, emit
     the literal UTF-8 characters in the JSON string. **Never escape them
-    as `\uXXXX`.** Claude Code's tool parameter pipe is UTF-8 native
+    as `\uXXXX`.** The host tool parameter pipe is UTF-8 native
     and passes characters through unchanged. Manually escaping requires
     recalling each codepoint from training, which is unreliable for long
     CJK strings — the model regularly emits the wrong codepoint (e.g.
@@ -377,7 +378,7 @@ if [ -f "$_GBRAIN_CONFIG" ] && command -v gbrain >/dev/null 2>&1; then
     if [ -n "$_GBRAIN_PIN_PATH" ]; then
       echo "GBrain configured. Prefer \`gbrain search\`/\`gbrain query\` over Grep for"
       echo "semantic questions; use \`gbrain code-def\`/\`code-refs\`/\`code-callers\` for"
-      echo "symbol-aware code lookup. See \"## GBrain Search Guidance\" in CLAUDE.md."
+      echo "symbol-aware code lookup. See \"## GBrain Search Guidance\" in AGENTS.md."
       echo "Run /sync-gbrain to refresh."
     else
       echo "GBrain configured but this worktree isn't pinned yet. Run \`/sync-gbrain --full\`"
@@ -391,16 +392,10 @@ _BRAIN_SYNC_MODE=$("$_BRAIN_CONFIG_BIN" get artifacts_sync_mode 2>/dev/null || e
 
 # Detect remote-MCP mode (Path 4 of /setup-gbrain). Local artifacts sync is
 # a no-op in remote mode; the brain server pulls from GitHub/GitLab on its
-# own cadence. Read claude.json directly to keep this preamble fast (no
-# subprocess to claude CLI on every skill start).
+# own cadence. Read host MCP config directly when available to keep this
+# preamble fast (no subprocess to host CLI on every skill start).
 _GBRAIN_MCP_MODE="none"
-if command -v jq >/dev/null 2>&1 && [ -f "$HOME/.claude.json" ]; then
-  _GBRAIN_MCP_TYPE=$(jq -r '.mcpServers.gbrain.type // .mcpServers.gbrain.transport // empty' "$HOME/.claude.json" 2>/dev/null)
-  case "$_GBRAIN_MCP_TYPE" in
-    url|http|sse) _GBRAIN_MCP_MODE="remote-http" ;;
-    stdio) _GBRAIN_MCP_MODE="local-stdio" ;;
-  esac
-fi
+# This host has no configured JSON MCP file for fast remote-mode detection.
 
 if [ -f "$_BRAIN_REMOTE_FILE" ] && [ ! -d "$_GSTACK_HOME/.git" ] && [ "$_BRAIN_SYNC_MODE" = "off" ]; then
   _BRAIN_NEW_URL=$(head -1 "$_BRAIN_REMOTE_FILE" 2>/dev/null | tr -d '[:space:]')
@@ -429,7 +424,7 @@ fi
 if [ "$_GBRAIN_MCP_MODE" = "remote-http" ]; then
   # Remote-MCP mode: local artifacts sync is a no-op (brain admin's server
   # pulls from GitHub/GitLab). Show the user this is by design, not broken.
-  _GBRAIN_HOST=$(jq -r '.mcpServers.gbrain.url // empty' "$HOME/.claude.json" 2>/dev/null | sed -E 's|^https?://([^/:]+).*|\1|')
+  _GBRAIN_HOST=$(echo remote)
   echo "ARTIFACTS_SYNC: remote-mode (managed by brain server ${_GBRAIN_HOST:-remote})"
 elif [ -d "$_GSTACK_HOME/.git" ] && [ "$_BRAIN_SYNC_MODE" != "off" ]; then
   _BRAIN_QUEUE_DEPTH=0
@@ -471,23 +466,45 @@ At skill END before telemetry:
 ```
 
 
-## Model-Specific Behavioral Patch (claude)
+## Model-Specific Behavioral Patch (gpt)
 
-The following nudges are tuned for the claude model family. They are
+The following nudges are tuned for the gpt model family. They are
 **subordinate** to skill workflow, STOP points, AskUserQuestion gates, plan-mode
 safety, and /ship review gates. If a nudge below conflicts with skill instructions,
 the skill wins. Treat these as preferences, not rules.
 
-**Todo-list discipline.** When working through a multi-step plan, mark each task
-complete individually as you finish it. Do not batch-complete at the end. If a task
-turns out to be unnecessary, mark it skipped with a one-line reason.
+**Completion bias.** Do not end your turn with a partial solution when the full
+solution is reachable. If you encounter an error, debug it. If a test fails, fix it.
+If something is ambiguous, make your best judgment and proceed — don't stop and ask
+unless you're genuinely blocked.
 
-**Think before heavy actions.** For complex operations (refactors, migrations,
-non-trivial new features), briefly state your approach before executing. This lets
-the user course-correct cheaply instead of mid-flight.
+**Prefer doing over listing.** When you'd be tempted to write "you could also try X,
+Y, or Z," try the best option yourself. Pick, execute, report results.
 
-**Dedicated tools over Bash.** Prefer Read, Edit, Write, Glob, Grep over shell
-equivalents (cat, sed, find, grep). The dedicated tools are cheaper and clearer.
+**No preamble.** Skip "Great question!", "Let me help with that", and restating the
+user's request. Start with the work.
+
+**AskUserQuestion is NOT preamble.** The "No preamble" and "Prefer doing over listing"
+rules above do NOT apply to AskUserQuestion content. When you invoke AskUserQuestion,
+the user is about to make a decision — they need context, not terseness. Always emit
+the full format from the preamble's AskUserQuestion Format section:
+
+1. **Re-ground** (project + branch + task — 1-2 sentences).
+2. **Simplify (ELI10)** — explain what's happening in plain English a 16-year-old could
+   follow. Concrete stakes, not abstract tradeoffs. Non-negotiable; this is NOT preamble.
+3. **Recommend** — `RECOMMENDATION: Choose [X] because [one-line reason]` on its own
+   line. Never omit this line. Never collapse it into the options list.
+4. **Options** — lettered `A) B) C)` with Completeness scores (coverage-differentiated)
+   or the "options differ in kind" note (kind-differentiated).
+
+If you find yourself about to present an AskUserQuestion without the Simplify/ELI10
+paragraph, without a RECOMMENDATION line, or by just listing options and asking "which
+one?" — stop, back up, and emit the full format. The user will ask you to do it anyway,
+so do it the first time.
+
+**Reminder: subordination applies.** When a skill workflow says STOP, stop. When the
+skill asks via AskUserQuestion, that is the wait-for-user gate, not an ambiguity.
+Completion bias does not override safety gates.
 
 ## Voice
 
@@ -735,14 +752,14 @@ _TEL_END=$(date +%s)
 _TEL_DUR=$(( _TEL_END - _TEL_START ))
 rm -f ~/.gstack/analytics/.pending-"$_SESSION_ID" 2>/dev/null || true
 # Session timeline: record skill completion (local-only, never sent anywhere)
-$GSTACK_ROOT/bin/gstack-timeline-log '{"skill":"SKILL_NAME","event":"completed","branch":"'$(git branch --show-current 2>/dev/null || echo unknown)'","outcome":"OUTCOME","duration_s":"'"$_TEL_DUR"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null || true
+$GSTACK_BIN/gstack-timeline-log '{"skill":"SKILL_NAME","event":"completed","branch":"'$(git branch --show-current 2>/dev/null || echo unknown)'","outcome":"OUTCOME","duration_s":"'"$_TEL_DUR"'","session":"'"$_SESSION_ID"'"}' 2>/dev/null || true
 # Local analytics (gated on telemetry setting)
 if [ "$_TEL" != "off" ]; then
 echo '{"skill":"SKILL_NAME","duration_s":"'"$_TEL_DUR"'","outcome":"OUTCOME","browse":"USED_BROWSE","session":"'"$_SESSION_ID"'","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' >> ~/.gstack/analytics/skill-usage.jsonl 2>/dev/null || true
 fi
 # Remote telemetry (opt-in, requires binary)
-if [ "$_TEL" != "off" ] && [ -x $GSTACK_ROOT/bin/gstack-telemetry-log ]; then
-  $GSTACK_ROOT/bin/gstack-telemetry-log \
+if [ "$_TEL" != "off" ] && [ -x $GSTACK_BIN/gstack-telemetry-log ]; then
+  $GSTACK_BIN/gstack-telemetry-log \
     --skill "SKILL_NAME" --duration "$_TEL_DUR" --outcome "OUTCOME" \
     --used-browse "USED_BROWSE" --session-id "$_SESSION_ID" 2>/dev/null &
 fi
@@ -1081,9 +1098,9 @@ Write TESTING.md with:
 - Test layers: Unit tests (what, where, when), Integration tests, Smoke tests, E2E tests
 - Conventions: file naming, assertion style, setup/teardown patterns
 
-### B7. Update CLAUDE.md
+### B7. Update AGENTS.md
 
-First check: If CLAUDE.md already has a `## Testing` section → skip. Don't duplicate.
+First check: If AGENTS.md already has a `## Testing` section → skip. Don't duplicate.
 
 Append a `## Testing` section:
 - Run command and test directory
@@ -1102,7 +1119,7 @@ Append a `## Testing` section:
 git status --porcelain
 ```
 
-Only commit if there are changes. Stage all bootstrap files (config, test directory, TESTING.md, CLAUDE.md, .github/workflows/test.yml if created):
+Only commit if there are changes. Stage all bootstrap files (config, test directory, TESTING.md, AGENTS.md, .github/workflows/test.yml if created):
 `git commit -m "chore: bootstrap test framework ({framework name})"`
 
 ---
@@ -1247,7 +1264,7 @@ Evals are mandatory when prompt-related files change. Skip this step entirely if
 git diff origin/<base> --name-only
 ```
 
-Match against these patterns (from CLAUDE.md):
+Match against these patterns (from AGENTS.md):
 - `app/services/*_prompt_builder.rb`
 - `app/services/*_generation_service.rb`, `*_writer_service.rb`, `*_designer_service.rb`
 - `app/services/*_evaluator.rb`, `*_scorer.rb`, `*_classifier_service.rb`, `*_analyzer.rb`
@@ -1301,7 +1318,7 @@ If multiple suites need to run, run them sequentially (each needs a test lane). 
 
 ## Step 7: Test Coverage Audit
 
-**Dispatch this step as a subagent** using the Agent tool with `subagent_type: "general-purpose"`. The subagent runs the coverage audit in a fresh context window — the parent only sees the conclusion, not intermediate file reads. This is context-rot defense.
+**Dispatch this step as a subagent** using Codex subagents with `subagent_type: "general-purpose"`. The subagent runs the coverage audit in a fresh context window — the parent only sees the conclusion, not intermediate file reads. This is context-rot defense.
 
 **Subagent prompt:** Pass the following instructions to the subagent, with `<base>` substituted with the base branch:
 
@@ -1313,8 +1330,8 @@ If multiple suites need to run, run them sequentially (each needs a test lane). 
 
 Before analyzing coverage, detect the project's test framework:
 
-1. **Read CLAUDE.md** — look for a `## Testing` section with test command and framework name. If found, use that as the authoritative source.
-2. **If CLAUDE.md has no testing section, auto-detect:**
+1. **Read AGENTS.md** — look for a `## Testing` section with test command and framework name. If found, use that as the authoritative source.
+2. **If AGENTS.md has no testing section, auto-detect:**
 
 ```bash
 setopt +o nomatch 2>/dev/null || true  # zsh compat
@@ -1481,7 +1498,7 @@ Coverage line: `Test Coverage Audit: N new code paths. M covered (X%). K tests g
 
 **7. Coverage gate:**
 
-Before proceeding, check CLAUDE.md for a `## Test Coverage` section with `Minimum:` and `Target:` fields. If found, use those percentages. Otherwise use defaults: Minimum = 60%, Target = 80%.
+Before proceeding, check AGENTS.md for a `## Test Coverage` section with `Minimum:` and `Target:` fields. If found, use those percentages. Otherwise use defaults: Minimum = 60%, Target = 80%.
 
 Using the coverage percentage from the diagram in substep 4 (the `COVERAGE: X/Y (Z%)` line):
 
@@ -1559,7 +1576,7 @@ Repo: {owner/repo}
 
 ## Step 8: Plan Completion Audit
 
-**Dispatch this step as a subagent** using the Agent tool with `subagent_type: "general-purpose"`. The subagent reads the plan file and every referenced code file in its own fresh context. Parent gets only the conclusion.
+**Dispatch this step as a subagent** using Codex subagents with `subagent_type: "general-purpose"`. The subagent reads the plan file and every referenced code file in its own fresh context. Parent gets only the conclusion.
 
 **Subagent prompt:** Pass these instructions to the subagent:
 
@@ -1579,7 +1596,7 @@ REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
 _PLAN_SLUG=$(git remote get-url origin 2>/dev/null | sed 's|.*[:/]\([^/]*/[^/]*\)\.git$|\1|;s|.*[:/]\([^/]*/[^/]*\)$|\1|' | tr '/' '-' | tr -cd 'a-zA-Z0-9._-') || true
 _PLAN_SLUG="${_PLAN_SLUG:-$(basename "$PWD" | tr -cd 'a-zA-Z0-9._-')}"
 # Search common plan file locations (project designs first, then personal/local)
-for PLAN_DIR in "$HOME/.gstack/projects/$_PLAN_SLUG" "$HOME/.claude/plans" "$HOME/.codex/plans" ".gstack/plans"; do
+for PLAN_DIR in "$HOME/.gstack/projects/$_PLAN_SLUG" "$HOME/.codex/plans" ".gstack/plans"; do
   [ -d "$PLAN_DIR" ] || continue
   PLAN=$(ls -t "$PLAN_DIR"/*.md 2>/dev/null | xargs grep -l "$BRANCH" 2>/dev/null | head -1)
   [ -z "$PLAN" ] && PLAN=$(ls -t "$PLAN_DIR"/*.md 2>/dev/null | xargs grep -l "$REPO" 2>/dev/null | head -1)
@@ -1995,7 +2012,7 @@ Save the review output — it goes into the PR body in Step 19.
 
 ## Step 10: Address Greptile review comments (if PR exists)
 
-**Dispatch the fetch + classification as a subagent** using the Agent tool with `subagent_type: "general-purpose"`. The subagent pulls every Greptile comment, runs the escalation detection algorithm, and classifies each comment. Parent receives a structured list and handles user interaction + file edits.
+**Dispatch the fetch + classification as a subagent** using Codex subagents with `subagent_type: "general-purpose"`. The subagent pulls every Greptile comment, runs the escalation detection algorithm, and classifies each comment. Parent receives a structured list and handles user interaction + file edits.
 
 **Subagent prompt:**
 
@@ -2483,7 +2500,7 @@ git push -u origin <branch-name>
 
 ## Step 18: Documentation sync (via subagent, before PR creation)
 
-**Dispatch /document-release as a subagent** using the Agent tool with `subagent_type: "general-purpose"`. The subagent gets a fresh context window — zero rot from the preceding 17 steps. It also runs the **full** `/document-release` workflow (with CHANGELOG clobber protection, doc exclusions, risky-change gates, named staging, race-safe PR body editing) rather than a weaker reimplementation.
+**Dispatch /document-release as a subagent** using Codex subagents with `subagent_type: "general-purpose"`. The subagent gets a fresh context window — zero rot from the preceding 17 steps. It also runs the **full** `/document-release` workflow (with CHANGELOG clobber protection, doc exclusions, risky-change gates, named staging, race-safe PR body editing) rather than a weaker reimplementation.
 
 **Sequencing:** This step runs AFTER Step 17 (Push) and BEFORE Step 19 (Create PR). The PR is created once from final HEAD with the `## Documentation` section baked into the initial body. No create-then-re-edit dance.
 
@@ -2492,7 +2509,7 @@ git push -u origin <branch-name>
 > You are executing the /document-release workflow after a code push. Read the full skill file `${HOME}/.agents/skills/gstack/document-release/SKILL.md` and execute its complete workflow end-to-end, including CHANGELOG clobber protection, doc exclusions, risky-change gates, and named staging. Do NOT attempt to edit the PR body — no PR exists yet. Branch: `<branch>`, base: `<base>`.
 >
 > After completing the workflow, output a single JSON object on the LAST LINE of your response (no other text after it):
-> `{"files_updated":["README.md","CLAUDE.md",...],"commit_sha":"abc1234","pushed":true,"documentation_section":"<markdown block for PR body's ## Documentation section>"}`
+> `{"files_updated":["README.md","AGENTS.md",...],"commit_sha":"abc1234","pushed":true,"documentation_section":"<markdown block for PR body's ## Documentation section>"}`
 >
 > If no documentation files needed updating, output:
 > `{"files_updated":[],"commit_sha":null,"pushed":false,"documentation_section":null}`

@@ -1,18 +1,20 @@
 import type { TemplateContext } from '../types';
+import { getHostConfig } from '../../../hosts/index';
 
 export function generateRoutingInjection(ctx: TemplateContext): string {
+  const instructionsFile = getHostConfig(ctx.host).projectInstructionsFile || 'CLAUDE.md';
   return `If \`HAS_ROUTING\` is \`no\` AND \`ROUTING_DECLINED\` is \`false\` AND \`PROACTIVE_PROMPTED\` is \`yes\`:
-Check if a CLAUDE.md file exists in the project root. If it does not exist, create it.
+Check if a ${instructionsFile} file exists in the project root. If it does not exist, create it.
 
 Use AskUserQuestion:
 
-> gstack works best when your project's CLAUDE.md includes skill routing rules.
+> gstack works best when your project's ${instructionsFile} includes skill routing rules.
 
 Options:
-- A) Add routing rules to CLAUDE.md (recommended)
+- A) Add routing rules to ${instructionsFile} (recommended)
 - B) No thanks, I'll invoke skills manually
 
-If A: Append this section to the end of CLAUDE.md:
+If A: Append this section to the end of ${instructionsFile}:
 
 \`\`\`markdown
 
@@ -35,7 +37,7 @@ Key routing rules:
 - Resume context → invoke /context-restore
 \`\`\`
 
-Then commit the change: \`git add CLAUDE.md && git commit -m "chore: add gstack skill routing rules to CLAUDE.md"\`
+Then commit the change: \`git add ${instructionsFile} && git commit -m "chore: add gstack skill routing rules to ${instructionsFile}"\`
 
 If B: run \`${ctx.paths.binDir}/gstack-config set routing_declined true\` and say they can re-enable with \`gstack-config set routing_declined false\`.
 

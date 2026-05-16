@@ -10,6 +10,10 @@ const codex: HostConfig = {
   localSkillRoot: '.agents/skills/gstack',
   hostSubdir: '.agents',
   usesEnvVars: true,
+  projectInstructionsFile: 'AGENTS.md',
+  vendoredSkillRoot: '.agents/skills/gstack',
+  planRoot: '$HOME/.codex/plans',
+  defaultModel: 'gpt',
 
   frontmatter: {
     mode: 'allowlist',
@@ -26,10 +30,27 @@ const codex: HostConfig = {
 
   pathRewrites: [
     { from: '~/.claude/skills/gstack', to: '$GSTACK_ROOT' },
+    { from: '$HOME/.claude/plans', to: '$HOME/.codex/plans' },
+    { from: '~/.claude/plans', to: '~/.codex/plans' },
     { from: '.claude/skills/gstack', to: '.agents/skills/gstack' },
     { from: '.claude/skills/review', to: '.agents/skills/gstack/review' },
     { from: '.claude/skills', to: '.agents/skills' },
+    { from: 'CLAUDE.md', to: 'AGENTS.md' },
   ],
+  toolRewrites: {
+    'use the Bash tool': 'run a shell command',
+    'use the Write tool': 'write the file',
+    'use the Read tool': 'read the file',
+    'use the Edit tool': 'edit the file',
+    'use the Agent tool': 'use Codex subagents if available',
+    'use the Grep tool': 'search with rg',
+    'use the Glob tool': 'find files by pattern',
+    'the Bash tool': 'shell commands',
+    'the Read tool': 'file reads',
+    'the Write tool': 'file writes',
+    'the Edit tool': 'file edits',
+    'the Agent tool': 'Codex subagents',
+  },
 
   suppressedResolvers: [
     'DESIGN_OUTSIDE_VOICES',  // design.ts:485 — Codex can't invoke itself

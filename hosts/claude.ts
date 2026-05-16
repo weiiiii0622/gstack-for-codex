@@ -10,6 +10,11 @@ const claude: HostConfig = {
   localSkillRoot: '.claude/skills/gstack',
   hostSubdir: '.claude',
   usesEnvVars: false,
+  projectInstructionsFile: 'CLAUDE.md',
+  vendoredSkillRoot: '.claude/skills/gstack',
+  planRoot: '$HOME/.claude/plans',
+  mcpConfigJsonFile: '$HOME/.claude.json',
+  defaultModel: 'claude',
 
   frontmatter: {
     mode: 'denylist',
