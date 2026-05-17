@@ -26,6 +26,8 @@ triggers:
 ```bash
 _UPD=$(~/.claude/skills/gstack/bin/gstack-update-check 2>/dev/null || .claude/skills/gstack/bin/gstack-update-check 2>/dev/null || true)
 [ -n "$_UPD" ] && echo "$_UPD" || true
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null || .claude/skills/gstack/bin/gstack-paths 2>/dev/null)" || true
+GSTACK_STATE_ROOT="${GSTACK_STATE_ROOT:-.gstack}"
 mkdir -p ~/.gstack/sessions
 touch ~/.gstack/sessions/"$PPID"
 _SESSIONS=$(find ~/.gstack/sessions -mmin -120 -type f 2>/dev/null | wc -l | tr -d ' ')
@@ -68,7 +70,7 @@ for _PF in $(find ~/.gstack/analytics -maxdepth 1 -name '.pending-*' 2>/dev/null
   break
 done
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" 2>/dev/null || true
-_LEARN_FILE="${GSTACK_HOME:-$HOME/.gstack}/projects/${SLUG:-unknown}/learnings.jsonl"
+_LEARN_FILE="$GSTACK_STATE_ROOT/projects/${SLUG:-unknown}/learnings.jsonl"
 if [ -f "$_LEARN_FILE" ]; then
   _LEARN_COUNT=$(wc -l < "$_LEARN_FILE" 2>/dev/null | tr -d ' ')
   echo "LEARNINGS: $_LEARN_COUNT entries loaded"
@@ -516,7 +518,7 @@ At session start or after compaction, recover recent project context.
 
 ```bash
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-_PROJ="${GSTACK_HOME:-$HOME/.gstack}/projects/${SLUG:-unknown}"
+_PROJ="$GSTACK_STATE_ROOT/projects/${SLUG:-unknown}"
 if [ -d "$_PROJ" ]; then
   echo "--- RECENT ARTIFACTS ---"
   find "$_PROJ/ceo-plans" "$_PROJ/checkpoints" -type f -name "*.md" 2>/dev/null | xargs ls -t 2>/dev/null | head -3
@@ -918,12 +920,12 @@ Check whether this project has been through a successful `/land-and-deploy` befo
 and whether the deploy configuration has changed since then:
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-if [ ! -f ~/.gstack/projects/$SLUG/land-deploy-confirmed ]; then
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)" && eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
+if [ ! -f "$GSTACK_STATE_ROOT/projects/$SLUG/land-deploy-confirmed" ]; then
   echo "FIRST_RUN"
 else
   # Check if deploy config has changed since confirmation
-  SAVED_HASH=$(cat ~/.gstack/projects/$SLUG/land-deploy-confirmed 2>/dev/null)
+  SAVED_HASH=$(cat "$GSTACK_STATE_ROOT/projects/$SLUG/land-deploy-confirmed" 2>/dev/null)
   CURRENT_HASH=$(sed -n '/## Deploy Configuration/,/^## /p' CLAUDE.md 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
   # Also hash workflow files that affect deploy behavior
   WORKFLOW_HASH=$(find .github/workflows -maxdepth 1 \( -name '*deploy*' -o -name '*cd*' \) 2>/dev/null | xargs cat 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
@@ -1117,10 +1119,10 @@ Present the full dry-run results to the user via AskUserQuestion:
 
 Save the deploy config fingerprint so we can detect future changes:
 ```bash
-mkdir -p ~/.gstack/projects/$SLUG
+mkdir -p "$GSTACK_STATE_ROOT/projects/$SLUG"
 CURRENT_HASH=$(sed -n '/## Deploy Configuration/,/^## /p' CLAUDE.md 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
 WORKFLOW_HASH=$(find .github/workflows -maxdepth 1 \( -name '*deploy*' -o -name '*cd*' \) 2>/dev/null | xargs cat 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
-echo "${CURRENT_HASH}-${WORKFLOW_HASH}" > ~/.gstack/projects/$SLUG/land-deploy-confirmed
+echo "${CURRENT_HASH}-${WORKFLOW_HASH}" > "$GSTACK_STATE_ROOT/projects/$SLUG"/land-deploy-confirmed
 ```
 Continue to Step 2.
 
@@ -1796,8 +1798,8 @@ Save report to `.gstack/deploy-reports/{date}-pr{number}-deploy.md`.
 Log to the review dashboard:
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-mkdir -p ~/.gstack/projects/$SLUG
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)" && eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
+mkdir -p "$GSTACK_STATE_ROOT/projects/$SLUG"
 ```
 
 Write a JSONL entry with timing data:

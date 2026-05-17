@@ -93,7 +93,7 @@ if [ -z "$REMOTE_URL" ] && [ -n "$EXISTING_REMOTE" ]; then
 fi
 
 REPO_NAME="gstack-artifacts-${USER:-$(whoami)}"
-DESCRIPTION="gstack artifacts (CEO plans, designs, reports) — synced from ~/.gstack/projects/"
+DESCRIPTION="gstack artifacts (CEO plans, designs, reports) — synced from gstack project artifact roots"
 
 # Decide host preference if not pinned by --host.
 if [ -z "$REMOTE_URL" ] && [ -z "$HOST_PREF" ]; then

@@ -28,8 +28,9 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 eval "$("$SCRIPT_DIR/gstack-slug" 2>/dev/null)"
-GSTACK_HOME="${GSTACK_HOME:-$HOME/.gstack}"
-mkdir -p "$GSTACK_HOME/projects/$SLUG"
+eval "$("$SCRIPT_DIR/gstack-paths" 2>/dev/null)" || true
+GSTACK_STATE_ROOT="${GSTACK_STATE_ROOT:-${GSTACK_HOME:-$HOME/.gstack}}"
+mkdir -p "$GSTACK_STATE_ROOT/projects/$SLUG"
 
 INPUT="$1"
 
@@ -164,7 +165,7 @@ if [ $VALIDATE_RC -ne 0 ] || [ -z "$VALIDATED" ]; then
   exit 1
 fi
 
-echo "$VALIDATED" >> "$GSTACK_HOME/projects/$SLUG/question-log.jsonl"
+echo "$VALIDATED" >> "$GSTACK_STATE_ROOT/projects/$SLUG/question-log.jsonl"
 
 # NOTE: question-log.jsonl is deliberately NOT enqueued for gbrain-sync.
 # Per Codex v2 review, audit/derivation data stays local alongside the

@@ -1,7 +1,7 @@
 /**
  * Learnings resolver — cross-skill institutional memory
  *
- * Learnings are stored per-project at ~/.gstack/projects/{slug}/learnings.jsonl.
+ * Learnings are stored per-project at $GSTACK_STATE_ROOT/projects/{slug}/learnings.jsonl.
  * Each entry is a JSONL line with: ts, skill, type, key, insight, confidence,
  * source, branch, commit, files[].
  *

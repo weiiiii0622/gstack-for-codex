@@ -365,9 +365,10 @@ Compare screenshots and observations across pages for:
 
 **Project-scoped:**
 \`\`\`bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" && mkdir -p ~/.gstack/projects/$SLUG
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)"
+eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" && mkdir -p "$GSTACK_STATE_ROOT/projects/$SLUG"
 \`\`\`
-Write to: \`~/.gstack/projects/{slug}/{user}-{branch}-design-audit-{datetime}.md\`
+Write to: \`$GSTACK_STATE_ROOT/projects/{slug}/{user}-{branch}-design-audit-{datetime}.md\`
 
 **Baseline:** Write \`design-baseline.json\` for regression mode:
 \`\`\`json
@@ -825,7 +826,7 @@ Commands:
 - \`$D iterate --session /path/session.json --feedback "..." --output /path.png\` — iterate
 
 **CRITICAL PATH RULE:** All design artifacts (mockups, comparison boards, approved.json)
-MUST be saved to \`~/.gstack/projects/$SLUG/designs/\`, NEVER to \`.context/\`,
+MUST be saved to \`$GSTACK_STATE_ROOT/projects/$SLUG/designs/\`, NEVER to \`.context/\`,
 \`docs/designs/\`, \`/tmp/\`, or any project-local directory. Design artifacts are USER
 data, not project files. They persist across branches, conversations, and workspaces.`;
 }
@@ -851,8 +852,9 @@ Generating visual mockups of the proposed design... (say "skip" if you don't nee
 **Step 1: Set up the design directory**
 
 \`\`\`bash
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)"
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-_DESIGN_DIR="$HOME/.gstack/projects/$SLUG/designs/mockup-$(date +%Y%m%d)"
+_DESIGN_DIR="$GSTACK_STATE_ROOT/projects/$SLUG/designs/mockup-$(date +%Y%m%d)"
 mkdir -p "$_DESIGN_DIR"
 echo "DESIGN_DIR: $_DESIGN_DIR"
 \`\`\`
@@ -1014,7 +1016,9 @@ export function generateTasteProfile(ctx: TemplateContext): string {
   return `Read the persistent taste profile if it exists:
 
 \`\`\`bash
-_TASTE_PROFILE=~/.gstack/projects/$SLUG/taste-profile.json
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)"
+eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
+_TASTE_PROFILE="$GSTACK_STATE_ROOT/projects/$SLUG/taste-profile.json"
 if [ -f "$_TASTE_PROFILE" ]; then
   # Schema v1: { dimensions: { fonts, colors, layouts, aesthetics }, sessions: [] }
   # Each dimension has approved[] and rejected[] entries with
@@ -1139,4 +1143,3 @@ Flat design can strip away useful visual information that signals interactivity.
 Prioritize ruthlessly: things needed in a hurry go close at hand, everything
 else a few taps away with an obvious path to get there.`;
 }
-

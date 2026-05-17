@@ -8,10 +8,12 @@
 #   Collaborative: top author < 80%
 #
 # Override: gstack-config set repo_mode solo|collaborative
-# Cache:    ~/.gstack/projects/$SLUG/repo-mode.json (7-day TTL)
+# Cache:    $GSTACK_STATE_ROOT/projects/$SLUG/repo-mode.json (7-day TTL)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+eval "$("$SCRIPT_DIR/gstack-paths" 2>/dev/null)" || true
+GSTACK_STATE_ROOT="${GSTACK_STATE_ROOT:-${GSTACK_HOME:-$HOME/.gstack}}"
 # Compute SLUG directly (avoid eval of gstack-slug — branch names can contain shell metacharacters)
 REMOTE_URL=$(git remote get-url origin 2>/dev/null || true)
 if [ -z "$REMOTE_URL" ]; then
@@ -34,7 +36,7 @@ if [ -n "$OVERRIDE" ] && [ "$OVERRIDE" != "null" ]; then
 fi
 
 # Check cache (7-day TTL)
-CACHE_DIR="$HOME/.gstack/projects/$SLUG"
+CACHE_DIR="$GSTACK_STATE_ROOT/projects/$SLUG"
 CACHE_FILE="$CACHE_DIR/repo-mode.json"
 if [ -f "$CACHE_FILE" ]; then
   CACHE_AGE=$(( $(date +%s) - $(stat -f %m "$CACHE_FILE" 2>/dev/null || stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0) ))

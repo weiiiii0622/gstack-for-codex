@@ -1,4 +1,35 @@
-# gstack
+# gstack-for-codex
+
+## Fork note: Codex-first gstack
+
+- Codex-native install and generated output: `~/.codex`, `AGENTS.md`, and
+  `.agents/skills/` instead of Claude Code defaults.
+- Project-local gstack artifacts: plans, learnings, and review logs go into
+  each repo's `.gstack/` directory instead of global `~/.gstack/projects/`.
+
+This fork adapts `gstack` for OpenAI Codex users. Upstream `gstack` is built
+around Claude Code defaults, so many generated skills, setup paths, and agent
+instructions assumed `~/.claude`, `CLAUDE.md`, and Claude-specific wording.
+This fork changes the Codex build to use Codex-native defaults instead:
+
+- Skills install and resolve from `~/.codex` by default.
+- Project agent guidance targets `AGENTS.md`.
+- Generated project skills live under `.agents/skills/`.
+- Codex-generated skill docs use Codex-oriented model/tool wording where the
+  original output was Claude-specific.
+
+I also changed generated plan and review artifacts to be project-local. Skills
+such as `/office-hours`, `/plan-ceo-review`, `/plan-eng-review`, and related
+review flows now write their working files under the current repo's `.gstack/`
+directory instead of always writing to `~/.gstack/projects/`. Personal settings,
+telemetry preferences, sessions, and user-level config still stay global.
+
+Why: Codex users should be able to clone this fork, install the skills into the
+normal Codex home, and keep each project's plans, learnings, and review logs
+with that project. That avoids mixing artifacts across unrelated repos while
+keeping personal preferences shared across all projects.
+
+## Original repo:
 
 > "I don't think I've typed like a line of code probably since December, basically, which is an extremely large change." — [Andrej Karpathy](https://fortune.com/2026/03/21/andrej-karpathy-openai-cofounder-ai-agents-coding-state-of-psychosis-openclaw/), No Priors podcast, March 2026
 

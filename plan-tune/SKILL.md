@@ -40,6 +40,8 @@ allowed-tools:
 ```bash
 _UPD=$(~/.claude/skills/gstack/bin/gstack-update-check 2>/dev/null || .claude/skills/gstack/bin/gstack-update-check 2>/dev/null || true)
 [ -n "$_UPD" ] && echo "$_UPD" || true
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null || .claude/skills/gstack/bin/gstack-paths 2>/dev/null)" || true
+GSTACK_STATE_ROOT="${GSTACK_STATE_ROOT:-.gstack}"
 mkdir -p ~/.gstack/sessions
 touch ~/.gstack/sessions/"$PPID"
 _SESSIONS=$(find ~/.gstack/sessions -mmin -120 -type f 2>/dev/null | wc -l | tr -d ' ')
@@ -82,7 +84,7 @@ for _PF in $(find ~/.gstack/analytics -maxdepth 1 -name '.pending-*' 2>/dev/null
   break
 done
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" 2>/dev/null || true
-_LEARN_FILE="${GSTACK_HOME:-$HOME/.gstack}/projects/${SLUG:-unknown}/learnings.jsonl"
+_LEARN_FILE="$GSTACK_STATE_ROOT/projects/${SLUG:-unknown}/learnings.jsonl"
 if [ -f "$_LEARN_FILE" ]; then
   _LEARN_COUNT=$(wc -l < "$_LEARN_FILE" 2>/dev/null | tr -d ' ')
   echo "LEARNINGS: $_LEARN_COUNT entries loaded"
@@ -530,7 +532,7 @@ At session start or after compaction, recover recent project context.
 
 ```bash
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-_PROJ="${GSTACK_HOME:-$HOME/.gstack}/projects/${SLUG:-unknown}"
+_PROJ="$GSTACK_STATE_ROOT/projects/${SLUG:-unknown}"
 if [ -d "$_PROJ" ]; then
   echo "--- RECENT ARTIFACTS ---"
   find "$_PROJ/ceo-plans" "$_PROJ/checkpoints" -type f -name "*.md" 2>/dev/null | xargs ls -t 2>/dev/null | head -3
@@ -865,7 +867,7 @@ Power-user shortcuts (one-word invocations) — handle these too:
    ~/.claude/skills/gstack/bin/gstack-developer-profile --read >/dev/null
    # Update declared dimensions atomically
    eval "$(~/.claude/skills/gstack/bin/gstack-paths)"
-   _PROFILE="$GSTACK_STATE_ROOT/developer-profile.json"
+   _PROFILE="$HOME/.gstack/developer-profile.json"
    bun -e "
      const fs = require('fs');
      const p = JSON.parse(fs.readFileSync('$_PROFILE','utf-8'));
@@ -925,8 +927,8 @@ Parse the JSON. Present in **plain English**, not raw floats:
 ## Review question log
 
 ```bash
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)"
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-eval "$(~/.claude/skills/gstack/bin/gstack-paths)"
 _LOG="$GSTACK_STATE_ROOT/projects/$SLUG/question-log.jsonl"
 if [ ! -f "$_LOG" ]; then
   echo "NO_LOG"
@@ -1021,7 +1023,7 @@ is a trust boundary (Codex #15 in the design doc).
 3. After Y, write:
    ```bash
    eval "$(~/.claude/skills/gstack/bin/gstack-paths)"
-   _PROFILE="$GSTACK_STATE_ROOT/developer-profile.json"
+   _PROFILE="$HOME/.gstack/developer-profile.json"
    bun -e "
      const fs = require('fs');
      const p = JSON.parse(fs.readFileSync('$_PROFILE','utf-8'));
@@ -1061,8 +1063,8 @@ the user decides whether declared is wrong or behavior is wrong.
 
 ```bash
 ~/.claude/skills/gstack/bin/gstack-question-preference --stats
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)"
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-eval "$(~/.claude/skills/gstack/bin/gstack-paths)"
 _LOG="$GSTACK_STATE_ROOT/projects/$SLUG/question-log.jsonl"
 [ -f "$_LOG" ] && echo "TOTAL_LOGGED: $(wc -l < "$_LOG" | tr -d ' ')" || echo "TOTAL_LOGGED: 0"
 ~/.claude/skills/gstack/bin/gstack-developer-profile --profile | bun -e "

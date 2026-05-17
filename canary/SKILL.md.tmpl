@@ -47,6 +47,7 @@ When the user types `/canary`, run this skill.
 ### Phase 1: Setup
 
 ```bash
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)"
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null || echo "SLUG=unknown")"
 mkdir -p .gstack/canary-reports
 mkdir -p .gstack/canary-reports/baselines
@@ -198,7 +199,7 @@ Log the result for the review dashboard:
 
 ```bash
 {{SLUG_EVAL}}
-mkdir -p ~/.gstack/projects/$SLUG
+mkdir -p "$GSTACK_STATE_ROOT/projects/$SLUG"
 ```
 
 Write a JSONL entry: `{"skill":"canary","timestamp":"<ISO>","status":"<HEALTHY/DEGRADED/BROKEN>","url":"<url>","duration_min":<N>,"alerts":<N>}`

@@ -46,7 +46,7 @@ gbrain:
       render_as: "## Your builder profile snapshot"
     - id: design-doc-history
       kind: filesystem
-      glob: "~/.gstack/projects/{repo_slug}/*-design-*.md"
+      glob: "$GSTACK_STATE_ROOT/projects/{repo_slug}/*-design-*.md"
       sort: mtime_desc
       limit: 3
       render_as: "## Recent design docs for this project"
@@ -64,6 +64,8 @@ gbrain:
 ```bash
 _UPD=$(~/.claude/skills/gstack/bin/gstack-update-check 2>/dev/null || .claude/skills/gstack/bin/gstack-update-check 2>/dev/null || true)
 [ -n "$_UPD" ] && echo "$_UPD" || true
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null || .claude/skills/gstack/bin/gstack-paths 2>/dev/null)" || true
+GSTACK_STATE_ROOT="${GSTACK_STATE_ROOT:-.gstack}"
 mkdir -p ~/.gstack/sessions
 touch ~/.gstack/sessions/"$PPID"
 _SESSIONS=$(find ~/.gstack/sessions -mmin -120 -type f 2>/dev/null | wc -l | tr -d ' ')
@@ -106,7 +108,7 @@ for _PF in $(find ~/.gstack/analytics -maxdepth 1 -name '.pending-*' 2>/dev/null
   break
 done
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" 2>/dev/null || true
-_LEARN_FILE="${GSTACK_HOME:-$HOME/.gstack}/projects/${SLUG:-unknown}/learnings.jsonl"
+_LEARN_FILE="$GSTACK_STATE_ROOT/projects/${SLUG:-unknown}/learnings.jsonl"
 if [ -f "$_LEARN_FILE" ]; then
   _LEARN_COUNT=$(wc -l < "$_LEARN_FILE" 2>/dev/null | tr -d ' ')
   echo "LEARNINGS: $_LEARN_COUNT entries loaded"
@@ -554,7 +556,7 @@ At session start or after compaction, recover recent project context.
 
 ```bash
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-_PROJ="${GSTACK_HOME:-$HOME/.gstack}/projects/${SLUG:-unknown}"
+_PROJ="$GSTACK_STATE_ROOT/projects/${SLUG:-unknown}"
 if [ -d "$_PROJ" ]; then
   echo "--- RECENT ARTIFACTS ---"
   find "$_PROJ/ceo-plans" "$_PROJ/checkpoints" -type f -name "*.md" 2>/dev/null | xargs ls -t 2>/dev/null | head -3
@@ -848,7 +850,7 @@ You are a **YC office hours partner**. Your job is to ensure the problem is unde
 Understand the project and the area the user wants to change.
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)" && eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
 ```
 
 1. Read `CLAUDE.md`, `TODOS.md` (if they exist).
@@ -857,7 +859,8 @@ eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
 4. **List existing design docs for this project:**
    ```bash
    setopt +o nomatch 2>/dev/null || true  # zsh compat
-   ls -t ~/.gstack/projects/$SLUG/*-design-*.md 2>/dev/null
+   eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)" && eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
+   ls -t "$GSTACK_STATE_ROOT/projects/$SLUG"/*-design-*.md 2>/dev/null
    ```
    If design docs exist, list them: "Prior designs for this project: [titles + dates]"
 
@@ -1142,14 +1145,15 @@ After the user states the problem (first question in Phase 2A or 2B), search exi
 Extract 3-5 significant keywords from the user's problem statement and grep across design docs:
 ```bash
 setopt +o nomatch 2>/dev/null || true  # zsh compat
-grep -li "<keyword1>\|<keyword2>\|<keyword3>" ~/.gstack/projects/$SLUG/*-design-*.md 2>/dev/null
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)" && eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
+grep -li "<keyword1>\|<keyword2>\|<keyword3>" "$GSTACK_STATE_ROOT/projects/$SLUG"/*-design-*.md 2>/dev/null
 ```
 
 If matches found, read the matching design docs and surface them:
 - "FYI: Related design found — '{title}' by {user} on {date} (branch: {branch}). Key overlap: {1-line summary of relevant section}."
 - Ask via AskUserQuestion: "Should we build on this prior design or start fresh?"
 
-This enables cross-team discovery — multiple users exploring the same project will see each other's design docs in `~/.gstack/projects/`.
+This enables cross-team discovery — multiple users exploring the same project will see each other's design docs in `$GSTACK_STATE_ROOT/projects/`.
 
 If no matches found, proceed silently.
 
@@ -1374,8 +1378,9 @@ Generating visual mockups of the proposed design... (say "skip" if you don't nee
 **Step 1: Set up the design directory**
 
 ```bash
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)"
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-_DESIGN_DIR="$HOME/.gstack/projects/$SLUG/designs/mockup-$(date +%Y%m%d)"
+_DESIGN_DIR="$GSTACK_STATE_ROOT/projects/$SLUG/designs/mockup-$(date +%Y%m%d)"
 mkdir -p "$_DESIGN_DIR"
 echo "DESIGN_DIR: $_DESIGN_DIR"
 ```
@@ -1541,7 +1546,7 @@ source of truth for all closing state (tier, resource dedup, journey tracking).
 
 ```bash
 eval "$(~/.claude/skills/gstack/bin/gstack-paths)"
-mkdir -p "$GSTACK_STATE_ROOT"
+mkdir -p ~/.gstack
 ```
 
 Append one JSON line with these fields (substitute actual values from this session):
@@ -1557,7 +1562,7 @@ Append one JSON line with these fields (substitute actual values from this sessi
 
 ```bash
 eval "$(~/.claude/skills/gstack/bin/gstack-paths)"
-echo '{"date":"TIMESTAMP","mode":"MODE","project_slug":"SLUG","signal_count":N,"signals":SIGNALS_ARRAY,"design_doc":"DOC_PATH","assignment":"ASSIGNMENT_TEXT","resources_shown":[],"topics":TOPICS_ARRAY}' >> "$GSTACK_STATE_ROOT/builder-profile.jsonl"
+echo '{"date":"TIMESTAMP","mode":"MODE","project_slug":"SLUG","signal_count":N,"signals":SIGNALS_ARRAY,"design_doc":"DOC_PATH","assignment":"ASSIGNMENT_TEXT","resources_shown":[],"topics":TOPICS_ARRAY}' >> ~/.gstack/builder-profile.jsonl
 ```
 
 This entry is append-only. The `resources_shown` field will be updated via a second append
@@ -1570,7 +1575,7 @@ after resource selection in Phase 6 Beat 3.5.
 Write the design document to the project directory.
 
 ```bash
-eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" && mkdir -p ~/.gstack/projects/$SLUG
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)" && eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)" && mkdir -p "$GSTACK_STATE_ROOT/projects/$SLUG"
 USER=$(whoami)
 DATETIME=$(date +%Y%m%d-%H%M%S)
 ```
@@ -1578,11 +1583,12 @@ DATETIME=$(date +%Y%m%d-%H%M%S)
 **Design lineage:** Before writing, check for existing design docs on this branch:
 ```bash
 setopt +o nomatch 2>/dev/null || true  # zsh compat
-PRIOR=$(ls -t ~/.gstack/projects/$SLUG/*-$BRANCH-design-*.md 2>/dev/null | head -1)
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)" && eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
+PRIOR=$(ls -t "$GSTACK_STATE_ROOT/projects/$SLUG"/*-$BRANCH-design-*.md 2>/dev/null | head -1)
 ```
 If `$PRIOR` exists, the new doc gets a `Supersedes:` field referencing it. This creates a revision chain — you can trace how a design evolved across office hours sessions.
 
-Write to `~/.gstack/projects/{slug}/{user}-{branch}-design-{datetime}.md`.
+Write to `$GSTACK_STATE_ROOT/projects/{slug}/{user}-{branch}-design-{datetime}.md`.
 
 After writing the design doc, tell the user:
 **"Design doc saved to: {full path}. Other skills (/plan-ceo-review, /plan-eng-review) will find it automatically."**
@@ -1916,7 +1922,7 @@ with a narrative arc (not a data table). The arc tells the STORY of their journe
 second person, referencing specific things they said across sessions. Then open it:
 ```bash
 eval "$(~/.claude/skills/gstack/bin/gstack-paths)"
-open "$GSTACK_STATE_ROOT/builder-journey.md"
+open ~/.gstack/builder-journey.md
 ```
 
 Then proceed to Founder Resources below.
@@ -2019,7 +2025,7 @@ PAUL GRAHAM ESSAYS:
 Append a resource-tracking entry:
 ```bash
 eval "$(~/.claude/skills/gstack/bin/gstack-paths)"
-echo '{"date":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","mode":"resources","project_slug":"'"${SLUG:-unknown}"'","signal_count":0,"signals":[],"design_doc":"","assignment":"","resources_shown":["URL1","URL2","URL3"],"topics":[]}' >> "$GSTACK_STATE_ROOT/builder-profile.jsonl"
+echo '{"date":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","mode":"resources","project_slug":"'"${SLUG:-unknown}"'","signal_count":0,"signals":[],"design_doc":"","assignment":"","resources_shown":["URL1","URL2","URL3"],"topics":[]}' >> ~/.gstack/builder-profile.jsonl
 ```
 
 2. Log the selection to analytics:
@@ -2051,7 +2057,7 @@ After the plea, suggest the next step:
 - **`/plan-eng-review`** for well-scoped implementation planning — lock in architecture, tests, edge cases
 - **`/plan-design-review`** for visual/UX design review
 
-The design doc at `~/.gstack/projects/` is automatically discoverable by downstream skills — they will read it during their pre-review system audit.
+The design doc at `$GSTACK_STATE_ROOT/projects/` is automatically discoverable by downstream skills — they will read it during their pre-review system audit.
 
 ---
 

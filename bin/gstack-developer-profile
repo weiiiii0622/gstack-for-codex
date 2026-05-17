@@ -19,13 +19,15 @@
 #                       Idempotent; archives the source file on success.
 #
 # Profile file: ~/.gstack/developer-profile.json (unified schema — see
-# docs/designs/PLAN_TUNING_V0.md). Event file: ~/.gstack/projects/{SLUG}/
-# question-events.jsonl.
+# docs/designs/PLAN_TUNING_V0.md). Event file: $GSTACK_STATE_ROOT/projects/{SLUG}/
+# question-log.jsonl.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 GSTACK_HOME="${GSTACK_HOME:-$HOME/.gstack}"
+eval "$("$SCRIPT_DIR/gstack-paths" 2>/dev/null)" || true
+GSTACK_STATE_ROOT="${GSTACK_STATE_ROOT:-$GSTACK_HOME}"
 PROFILE_FILE="$GSTACK_HOME/developer-profile.json"
 LEGACY_FILE="$GSTACK_HOME/builder-profile.jsonl"
 eval "$("$SCRIPT_DIR/gstack-slug" 2>/dev/null || true)"
@@ -240,7 +242,7 @@ do_gap() {
 # -----------------------------------------------------------------------
 do_derive() {
   ensure_profile
-  local EVENTS="$GSTACK_HOME/projects/$SLUG/question-log.jsonl"
+  local EVENTS="$GSTACK_STATE_ROOT/projects/$SLUG/question-log.jsonl"
   local REGISTRY="$ROOT_DIR/scripts/question-registry.ts"
   local SIGNALS="$ROOT_DIR/scripts/psychographic-signals.ts"
   if [ ! -f "$REGISTRY" ] || [ ! -f "$SIGNALS" ]; then
@@ -326,7 +328,7 @@ do_trace() {
     echo "TRACE: missing dimension argument" >&2
     exit 1
   fi
-  local EVENTS="$GSTACK_HOME/projects/$SLUG/question-log.jsonl"
+  local EVENTS="$GSTACK_STATE_ROOT/projects/$SLUG/question-log.jsonl"
   if [ ! -f "$EVENTS" ]; then
     echo "TRACE: no events for this project"
     return 0

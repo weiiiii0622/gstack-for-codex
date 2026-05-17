@@ -9,7 +9,7 @@
 # CI / container env where HOME may be unset.
 #
 # Chains:
-#   GSTACK_STATE_ROOT: GSTACK_HOME -> CLAUDE_PLUGIN_DATA -> $HOME/.gstack -> .gstack
+#   GSTACK_STATE_ROOT: GSTACK_HOME -> CLAUDE_PLUGIN_DATA -> <git-root>/.gstack -> .gstack
 #   PLAN_ROOT:         GSTACK_PLAN_DIR -> host plan env -> host default -> .gstack/plans
 #   TMP_ROOT:          TMPDIR -> TMP -> .gstack/tmp (and mkdir -p, best-effort)
 #
@@ -18,15 +18,18 @@
 # expansions ("$GSTACK_STATE_ROOT", not $GSTACK_STATE_ROOT).
 set -u
 
-# State root: where gstack writes projects/, sessions/, analytics/.
+# State root: where gstack writes project artifacts (projects/, checkpoints, plans).
 if [ -n "${GSTACK_HOME:-}" ]; then
   _state_root="$GSTACK_HOME"
 elif [ -n "${CLAUDE_PLUGIN_DATA:-}" ]; then
   _state_root="$CLAUDE_PLUGIN_DATA"
-elif [ -n "${HOME:-}" ]; then
-  _state_root="$HOME/.gstack"
 else
-  _state_root=".gstack"
+  _repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  if [ -n "$_repo_root" ]; then
+    _state_root="$_repo_root/.gstack"
+  else
+    _state_root=".gstack"
+  fi
 fi
 
 # Plan root: where /context-save and /codex consult write plan files.

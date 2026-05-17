@@ -23,18 +23,18 @@ gbrain:
   context_queries:
     - id: prior-retros
       kind: filesystem
-      glob: "~/.gstack/projects/{repo_slug}/retros/*.md"
+      glob: "$GSTACK_STATE_ROOT/projects/{repo_slug}/retros/*.md"
       sort: mtime_desc
       limit: 5
       render_as: "## Prior retros for this project"
     - id: recent-timeline
       kind: filesystem
-      glob: "~/.gstack/projects/{repo_slug}/timeline.jsonl"
+      glob: "$GSTACK_STATE_ROOT/projects/{repo_slug}/timeline.jsonl"
       tail: 30
       render_as: "## Recent timeline events"
     - id: recent-learnings
       kind: filesystem
-      glob: "~/.gstack/projects/{repo_slug}/learnings.jsonl"
+      glob: "$GSTACK_STATE_ROOT/projects/{repo_slug}/learnings.jsonl"
       tail: 10
       render_as: "## Recent learnings"
 ---
@@ -509,8 +509,9 @@ Check review JSONL logs for plan completion data from /ship runs this period:
 
 ```bash
 setopt +o nomatch 2>/dev/null || true  # zsh compat
+eval "$(~/.claude/skills/gstack/bin/gstack-paths 2>/dev/null)"
 eval "$(~/.claude/skills/gstack/bin/gstack-slug 2>/dev/null)"
-cat ~/.gstack/projects/$SLUG/*-reviews.jsonl 2>/dev/null | grep '"skill":"ship"' | grep '"plan_items_total"' || echo "NO_PLAN_DATA"
+cat "$GSTACK_STATE_ROOT/projects/$SLUG"/*-reviews.jsonl 2>/dev/null | grep '"skill":"ship"' | grep '"plan_items_total"' || echo "NO_PLAN_DATA"
 ```
 
 If plan completion data exists within the retro time window:

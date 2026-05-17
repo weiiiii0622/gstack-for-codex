@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // gstack-taste-update — update the persistent taste profile at
-// ~/.gstack/projects/$SLUG/taste-profile.json
+// $GSTACK_STATE_ROOT/projects/$SLUG/taste-profile.json
 //
 // Usage:
 //   gstack-taste-update approved <variant-path> [--reason "<why>"]
@@ -8,7 +8,7 @@
 //   gstack-taste-update show                       — print current profile summary
 //   gstack-taste-update migrate                    — upgrade legacy approved.json to v1
 //
-// Schema v1 at ~/.gstack/projects/$SLUG/taste-profile.json:
+// Schema v1 at $GSTACK_STATE_ROOT/projects/$SLUG/taste-profile.json:
 //
 //   {
 //     "version": 1,
@@ -33,7 +33,18 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
-const STATE_DIR = process.env.GSTACK_STATE_DIR || path.join(process.env.HOME || '/', '.gstack');
+function defaultStateDir(): string {
+  if (process.env.GSTACK_STATE_ROOT) return process.env.GSTACK_STATE_ROOT;
+  if (process.env.GSTACK_HOME) return process.env.GSTACK_HOME;
+  if (process.env.GSTACK_STATE_DIR) return process.env.GSTACK_STATE_DIR;
+  try {
+    const root = execSync('git rev-parse --show-toplevel', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    if (root) return path.join(root, '.gstack');
+  } catch {}
+  return path.join(process.cwd(), '.gstack');
+}
+
+const STATE_DIR = defaultStateDir();
 const SCHEMA_VERSION = 1;
 const SESSION_CAP = 50;
 const DECAY_PER_WEEK = 0.05;

@@ -18,10 +18,10 @@
  *   ~/.claude/projects/<encoded-cwd>/<uuid>.jsonl   — Claude Code sessions
  *   ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl    — Codex CLI sessions
  *   ~/Library/Application Support/Cursor/User/*.vscdb — Cursor (V1.0.1 follow-up)
- *   ~/.gstack/projects/<slug>/learnings.jsonl       — typed: learning
- *   ~/.gstack/projects/<slug>/timeline.jsonl        — typed: timeline
- *   ~/.gstack/projects/<slug>/ceo-plans/*.md        — typed: ceo-plan
- *   ~/.gstack/projects/<slug>/*-design-*.md         — typed: design-doc
+ *   $GSTACK_STATE_ROOT/projects/<slug>/learnings.jsonl       — typed: learning
+ *   $GSTACK_STATE_ROOT/projects/<slug>/timeline.jsonl        — typed: timeline
+ *   $GSTACK_STATE_ROOT/projects/<slug>/ceo-plans/*.md        — typed: ceo-plan
+ *   $GSTACK_STATE_ROOT/projects/<slug>/*-design-*.md         — typed: design-doc
  *   ~/.gstack/analytics/eureka.jsonl                — typed: eureka
  *   ~/.gstack/builder-profile.jsonl                 — typed: builder-profile-entry
  *
@@ -162,6 +162,15 @@ interface BulkResult {
 
 const HOME = homedir();
 const GSTACK_HOME = process.env.GSTACK_HOME || join(HOME, ".gstack");
+const GSTACK_ARTIFACT_ROOT = (() => {
+  if (process.env.GSTACK_STATE_ROOT) return process.env.GSTACK_STATE_ROOT;
+  if (process.env.GSTACK_HOME) return process.env.GSTACK_HOME;
+  try {
+    const root = execSync("git rev-parse --show-toplevel", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    if (root) return join(root, ".gstack");
+  } catch {}
+  return GSTACK_HOME;
+})();
 const STATE_PATH = join(GSTACK_HOME, ".transcript-ingest-state.json");
 const DEFAULT_INCREMENTAL_BUDGET_MS = 50;
 
@@ -421,7 +430,7 @@ function* walkCodexSessions(ctx: WalkContext): Generator<{ path: string; type: M
 }
 
 function* walkGstackArtifacts(ctx: WalkContext): Generator<{ path: string; type: MemoryType }> {
-  const projectsRoot = join(GSTACK_HOME, "projects");
+  const projectsRoot = join(GSTACK_ARTIFACT_ROOT, "projects");
 
   // Eureka log: ~/.gstack/analytics/eureka.jsonl
   const eurekaLog = join(GSTACK_HOME, "analytics", "eureka.jsonl");
@@ -756,7 +765,7 @@ function buildArtifactPage(path: string, type: MemoryType): PageRecord {
   const sha = fileSha256(path);
   const raw = readFileSync(path, "utf-8");
 
-  // Extract repo slug from path: ~/.gstack/projects/<slug>/...
+  // Extract repo slug from path: $GSTACK_STATE_ROOT/projects/<slug>/...
   let slug_repo = "_unattributed";
   const m = path.match(/\/\.gstack\/projects\/([^/]+)\//);
   if (m) slug_repo = m[1];

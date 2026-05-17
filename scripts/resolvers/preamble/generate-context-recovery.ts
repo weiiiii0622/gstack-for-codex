@@ -9,7 +9,7 @@ At session start or after compaction, recover recent project context.
 
 \`\`\`bash
 eval "$(${binDir}/gstack-slug 2>/dev/null)"
-_PROJ="\${GSTACK_HOME:-$HOME/.gstack}/projects/\${SLUG:-unknown}"
+_PROJ="$GSTACK_STATE_ROOT/projects/\${SLUG:-unknown}"
 if [ -d "$_PROJ" ]; then
   echo "--- RECENT ARTIFACTS ---"
   find "$_PROJ/ceo-plans" "$_PROJ/checkpoints" -type f -name "*.md" 2>/dev/null | xargs ls -t 2>/dev/null | head -3

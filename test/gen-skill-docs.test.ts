@@ -769,6 +769,8 @@ describe('TEST_COVERAGE_AUDIT placeholders', () => {
     expect(planSkill).toContain('Add missing tests to the plan');
     expect(planSkill).toContain('eng-review-test-plan');
     expect(planSkill).toContain('Test Plan Artifact');
+    expect(planSkill).toContain('$GSTACK_STATE_ROOT/projects');
+    expect(planSkill).not.toContain('~/.gstack/projects');
   });
 
   test('ship mode auto-generates tests + includes before/after count', () => {
@@ -776,6 +778,7 @@ describe('TEST_COVERAGE_AUDIT placeholders', () => {
     expect(shipSkill).toContain('Before/after test count');
     expect(shipSkill).toContain('30 code paths max');
     expect(shipSkill).toContain('ship-test-plan');
+    expect(shipSkill).toContain('$GSTACK_STATE_ROOT/projects');
   });
 
   test('review mode uses Fix-First + Review Army for specialist coverage', () => {

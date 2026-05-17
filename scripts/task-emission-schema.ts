@@ -3,7 +3,7 @@
  *
  * Each review skill (plan-ceo-review, plan-design-review, plan-eng-review,
  * plan-devex-review) writes one JSONL line per task during its synthesis step
- * to `~/.gstack/projects/$SLUG/tasks-{phase}-{datetime}.jsonl`.
+ * to `$GSTACK_STATE_ROOT/projects/$SLUG/tasks-{phase}-{datetime}.jsonl`.
  *
  * `/autoplan`'s Phase 4 aggregator reads ALL phase JSONL files, scopes them
  * by branch + commit window, dedupes by exact (component, sorted(files), title),

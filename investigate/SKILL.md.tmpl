@@ -51,7 +51,7 @@ gbrain:
       render_as: "## Prior investigations in this repo"
     - id: project-learnings
       kind: filesystem
-      glob: "~/.gstack/projects/{repo_slug}/learnings.jsonl"
+      glob: "$GSTACK_STATE_ROOT/projects/{repo_slug}/learnings.jsonl"
       tail: 10
       render_as: "## Recent learnings (patterns + pitfalls)"
     - id: recent-eureka

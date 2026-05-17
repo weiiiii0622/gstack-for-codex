@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'bun:test';
 import { spawnSync } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 
 const ROOT = path.resolve(import.meta.dir, '..');
@@ -15,9 +17,10 @@ const BIN = path.join(ROOT, 'bin', 'gstack-paths');
 // HOME from USERPROFILE at shell startup if HOME is unset/empty, which
 // silently breaks the "HOME unset" test scenarios. Clearing USERPROFILE
 // alongside HOME prevents that auto-population on Windows runners.
-function run(env: Record<string, string | undefined>): Record<string, string> {
+function run(env: Record<string, string | undefined>, cwd = ROOT): Record<string, string> {
   const result = spawnSync('bash', [BIN], {
     env: { PATH: process.env.PATH, USERPROFILE: '', ...env } as Record<string, string>,
+    cwd,
     encoding: 'utf-8',
   });
   if (result.status !== 0) {
@@ -49,9 +52,15 @@ describe('gstack-paths', () => {
     expect(got.GSTACK_STATE_ROOT).toBe('/tmp/plugin-data');
   });
 
-  test('HOME-derived state root when GSTACK_HOME and CLAUDE_PLUGIN_DATA unset', () => {
+  test('repo-local state root when GSTACK_HOME and CLAUDE_PLUGIN_DATA unset', () => {
     const got = run({ HOME: '/tmp/myhome' });
-    expect(got.GSTACK_STATE_ROOT).toBe('/tmp/myhome/.gstack');
+    expect(got.GSTACK_STATE_ROOT).toBe(path.join(ROOT, '.gstack'));
+  });
+
+  test('non-git cwd fallback ignores HOME and uses local .gstack', () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gstack-paths-'));
+    const got = run({ HOME: '/tmp/myhome' }, cwd);
+    expect(got.GSTACK_STATE_ROOT).toBe('.gstack');
   });
 
   test('CWD fallback when HOME also unset (container env)', () => {
@@ -61,7 +70,8 @@ describe('gstack-paths', () => {
     // (HOME genuinely unset) is unreachable on Windows runners. The bash
     // script's CWD fallback IS correct — exercised on Linux/Mac CI.
     if (process.platform === 'win32') return;
-    const got = run({ HOME: '' });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gstack-paths-no-home-'));
+    const got = run({ HOME: '' }, cwd);
     expect(got.GSTACK_STATE_ROOT).toBe('.gstack');
   });
 
